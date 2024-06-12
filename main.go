@@ -70,6 +70,35 @@ func saveToken(path string, token *oauth2.Token) {
         json.NewEncoder(f).Encode(token)
 }
 
+func GetUpcomingEvents(srv *calendar.Service) {
+    t := time.Now().Format(time.RFC3339)
+    events, err := srv.Events.List("primary").ShowDeleted(false).
+        SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
+
+    if err != nil {
+        log.Fatalf("Unable to retrieve upcoming events: %v", err)
+    }
+
+    for _, item := range events.Items {
+        fmt.Println(item.Summary)
+    }
+
+}
+
+
+func GetCalendars(srv *calendar.Service) {
+    calendars, err := srv.CalendarList.List().ShowDeleted(false). 
+        MaxResults(10).Do()
+
+    if err != nil {
+        log.Fatalf("Unable to retrieve calendars: %v", err)
+    }
+    
+    for _, item := range calendars.Items {
+        fmt.Println(item.Summary)
+    }
+}
+
 func main() {
         ctx := context.Background()
         b, err := os.ReadFile("credentials.json")
@@ -89,23 +118,8 @@ func main() {
                 log.Fatalf("Unable to retrieve Calendar client: %v", err)
         }
 
-        t := time.Now().Format(time.RFC3339)
-        events, err := srv.Events.List("primary").ShowDeleted(false).
-                SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
-        if err != nil {
-                log.Fatalf("Unable to retrieve next ten of the user's events: %v", err)
-        }
-        fmt.Println("Upcoming events:")
-        if len(events.Items) == 0 {
-                fmt.Println("No upcoming events found.")
-        } else {
-                for _, item := range events.Items {
-                        date := item.Start.DateTime
-                        if date == "" {
-                                date = item.Start.Date
-                        }
-                        fmt.Printf("%v (%v)\n", item.Summary, date)
-                }
-        }
+        GetCalendars(srv)
+        fmt.Println()
+        GetUpcomingEvents(srv)
 }
 
